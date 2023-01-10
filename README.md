@@ -8,7 +8,7 @@ This project explores how easy it is to build programs which can "race" two or m
  - explicit timeouts
  - errors causing a race loss
 
-A scenario server validates the implementations of 8 scenarios:
+A scenario server validates the implementations of 9 scenarios:
 
 1. Race 2 concurrent requests
     ```
@@ -52,6 +52,11 @@ A scenario server validates the implementations of 8 scenarios:
     GET /8?close=<id obtained from open request>
     ```
 
+9. Make 10 concurrent requests where 5 return a 200 response with a letter, when assembled in order of when they responded, form the "right" answer
+    ```
+    GET /9
+    ```
+
 If your implementation is correct, each race will result in a 200 response with a body:
 ```
 right
@@ -66,4 +71,5 @@ The scenario server has a public container `ghcr.io/jamesward/easyracer` and if 
 | Scala 3 + ZIO | [scala-zio](scala-zio) | ![tests](https://github.com/jamesward/easyracer/actions/workflows/scala-zio.yaml/badge.svg) |
 | Kotlin + Splitties | [kotlin-splitties](kotlin-splitties) | ![tests](https://github.com/jamesward/easyracer/actions/workflows/kotlin-splitties.yaml/badge.svg) |
 | Kotlin + Arrow | [kotlin-arrow](kotlin-arrow) | ![tests](https://github.com/jamesward/easyracer/actions/workflows/kotlin-arrow.yaml/badge.svg) |
+| Java + Loom | [java-loom](java-loom) | ![tests](https://github.com/jamesward/easyracer/actions/workflows/java-loom.yaml/badge.svg) |
 | Python + AIOHTTP | [python-aiohttp](python-aiohttp) | ![tests](https://github.com/jamesward/easyracer/actions/workflows/python-aiohttp.yaml/badge.svg) |

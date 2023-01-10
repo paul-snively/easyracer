@@ -1,20 +1,25 @@
 import arrow.core.merge
 import arrow.fx.coroutines.raceN
 import io.ktor.client.*
+import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.time.delay
-import kotlinx.coroutines.time.withTimeout
 import java.io.IOException
 import java.time.Duration
+import java.time.Instant
 
 
-val client = HttpClient()
+val client = HttpClient {
+    install(HttpTimeout)
+}
 
 // Note: Intentionally, only url handling code is shared across scenarios
 
@@ -30,8 +35,7 @@ suspend fun scenario2(url: (Int) -> String): String {
     suspend fun req(): String =
         try {
             client.get(url(2)).bodyAsText()
-        }
-        catch (e: IOException) {
+        } catch (e: IOException) {
             awaitCancellation()
         }
 
@@ -44,23 +48,41 @@ suspend fun scenario2(url: (Int) -> String): String {
 }
 
 
-// todo: not working
+// note: plain Kotlin, not Arrow
 suspend fun scenario3(url: (Int) -> String): String = coroutineScope {
-    TODO()
-
-    /*
-    repeat(10_000) {
-        client.get(url(3))
+    val reqs = List(10_000) {
+        async {
+            client.get(url(3))
+        }
     }
-     */
+
+    val done = select {
+        reqs.map { req ->
+            req.onAwait.invoke {
+                it.bodyAsText()
+            }
+        }
+    }
+
+    reqs.forEach {
+        it.cancelAndJoin()
+    }
+
+    done
 }
 
 
-// todo: not working
 suspend fun scenario4(url: (Int) -> String): String =
     raceN({
-        withTimeout(Duration.ofSeconds(1)) {
-            client.get(url(4))
+        // todo: withTimeout(Duration.ofSeconds(1)) {
+        try {
+            client.get(url(4)) {
+                timeout {
+                    requestTimeoutMillis = 1000
+                }
+            }
+        } catch (e: Exception) {
+            awaitCancellation()
         }
     }, {
         client.get(url(4))
@@ -73,8 +95,7 @@ suspend fun scenario5(url: (Int) -> String): String {
             val resp = client.get(url(5))
             require(resp.status.isSuccess())
             resp.bodyAsText()
-        }
-        catch (e: IllegalArgumentException) {
+        } catch (e: IllegalArgumentException) {
             awaitCancellation()
         }
 
@@ -92,8 +113,7 @@ suspend fun scenario6(url: (Int) -> String): String {
             val resp = client.get(url(6))
             require(resp.status.isSuccess())
             resp.bodyAsText()
-        }
-        catch (e: IllegalArgumentException) {
+        } catch (e: IllegalArgumentException) {
             awaitCancellation()
         }
 
@@ -103,7 +123,7 @@ suspend fun scenario6(url: (Int) -> String): String {
         req()
     }, {
         req()
-    }).fold({it}, {it}, {it})
+    }).fold({ it }, { it }, { it })
 }
 
 
@@ -116,7 +136,6 @@ suspend fun scenario7(url: (Int) -> String): String =
     }).merge().bodyAsText()
 
 
-// todo: not working
 suspend fun scenario8(url: (Int) -> String): String {
     suspend fun req(): String {
         val id = client.get(url(8) + "?open").bodyAsText()
@@ -124,26 +143,50 @@ suspend fun scenario8(url: (Int) -> String): String {
             val resp = client.get(url(8) + "?use=$id")
             require(resp.status.isSuccess())
             return resp.bodyAsText()
-        }
-        catch (e: IllegalArgumentException) {
-            awaitCancellation()
-        }
-        finally {
+        } finally {
             client.get(url(8) + "?close=$id").bodyAsText()
         }
     }
 
-    return withTimeout(Duration.ofSeconds(10)) {
-        raceN({
+    return raceN({
+        try {
             req()
-        }, {
+        } catch (e: Exception) {
+            awaitCancellation()
+        }
+    }, {
+        try {
             req()
-        }).merge()
+        } catch (e: Exception) {
+            awaitCancellation()
+        }
+    }).merge()
+}
+
+
+suspend fun scenario9(url: (Int) -> String): String {
+    suspend fun req(): Pair<Instant, String>? {
+        val resp = client.get(url(9))
+        return if (resp.status.isSuccess()) {
+            Instant.now() to resp.bodyAsText()
+        } else {
+            null
+        }
+    }
+
+    return coroutineScope {
+        val letters = List(10) {
+            async {
+                req()
+            }
+        }.awaitAll()
+
+        letters.filterNotNull().sortedBy { it.first }.joinToString("") { it.second }
     }
 }
 
 
-val scenarios = listOf(::scenario1, ::scenario2, ::scenario3, ::scenario4, ::scenario5, ::scenario6, ::scenario7, ::scenario8)
+val scenarios = listOf(::scenario1, ::scenario2, ::scenario3, ::scenario4, ::scenario5, ::scenario6, ::scenario7, ::scenario8, ::scenario9)
 //val scenarios = listOf(::scenario8)
 
 suspend fun results(url: (Int) -> String) = scenarios.map {
