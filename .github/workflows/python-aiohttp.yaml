@@ -5,7 +5,7 @@ on:
   push:
     paths:
       - python-aiohttp/**
-      - .github/python-aiohttp.yaml
+      - .github/workflows/python-aiohttp.yaml
 
 jobs:
   test:
@@ -18,8 +18,7 @@ jobs:
         with:
           python-version-file: ./python-aiohttp/.python-version
           cache: 'pip'
-          cache-dependency-path:
-            - ./python-aiohttp/requirements.txt
+          cache-dependency-path: ./python-aiohttp/requirements.txt
 
       - working-directory: ./python-aiohttp
         run: |

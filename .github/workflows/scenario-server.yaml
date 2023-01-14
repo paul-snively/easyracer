@@ -4,10 +4,10 @@ on:
   push:
     paths:
       - scenario-server/**
-      - .github/scenario-server.yaml
+      - .github/workflows/scenario-server.yaml
 
 jobs:
-  build-and-push:
+  build-and-push-amd64:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
@@ -26,14 +26,93 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
-            type=sha
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,suffix=-amd64
+            type=raw,value=latest-amd64,enable={{is_default_branch}}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
         with:
+          platforms: linux/amd64
           context: ./scenario-server
+          file: ./scenario-server/Dockerfile-amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+  build-and-push-aarch64:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v3
+
+      - name: Login to GitHub Package Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        name: Extract metadata (tags, labels) for Docker
+        uses: docker/metadata-action@v4
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=sha,suffix=-aarch64
+            type=raw,value=latest-aarch64,enable={{is_default_branch}}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
+        with:
+          platforms: linux/arm64/v8
+          context: ./scenario-server
+          file: ./scenario-server/Dockerfile-aarch64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  create-manifests:
+    runs-on: ubuntu-latest
+    needs: [build-and-push-amd64, build-and-push-aarch64]
+
+    steps:
+      - name: Login to GitHub Package Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        name: Extract metadata (tags, labels) for Docker
+        uses: docker/metadata-action@v4
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: type=sha
+
+      - name: Create SHA manifest and push
+        run: |
+          docker manifest create \
+            ${{ steps.meta.outputs.tags }} \
+            --amend ${{ steps.meta.outputs.tags }}-amd64 \
+            --amend ${{ steps.meta.outputs.tags }}-aarch64
+          docker manifest push ${{ steps.meta.outputs.tags }}
+
+      - name: Create latest manifest and push
+        if: github.ref == 'refs/heads/main'
+        run: |
+          docker manifest create \
+            ghcr.io/${{ github.repository }}:latest \
+            --amend ghcr.io/${{ github.repository }}:latest-amd64 \
+            --amend ghcr.io/${{ github.repository }}:latest-aarch64
+          docker manifest push ghcr.io/${{ github.repository }}:latest
 
