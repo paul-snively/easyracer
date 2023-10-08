@@ -1,14 +1,14 @@
 Easy Racer
 ----------
 
-This project explores how easy it is to build programs which can "race" two or more concurrent computations while providing:
+A series of obstactle courses as a way to compare how different languages and frameworks handle structured concurrency, including:
  - loser cancellation
  - resource management
  - efficient thread utilization (i.e. reactive, non-blocking)
  - explicit timeouts
  - errors causing a race loss
 
-A scenario server validates the implementations of 9 scenarios:
+A scenario server validates the implementations of 11 scenarios:
 
 1. Race 2 concurrent requests
     ```
@@ -65,11 +65,29 @@ right
 
 The scenario server has a public container `ghcr.io/jamesward/easyracer` and if you contribute your client to this repo, use Testcontainers and include automated integration tests.
 
+For local dev you can spin up the server via Docker:
+```
+docker run -it -p8080:8080 ghcr.io/jamesward/easyracer --debug
+```
+
 ## Clients
-| Name | Source | Tests |
-| ---- | ------ | ----- |
-| Scala 3 + ZIO | [scala-zio](scala-zio) | ![tests](https://github.com/jamesward/easyracer/actions/workflows/scala-zio.yaml/badge.svg) |
-| Kotlin + Splitties | [kotlin-splitties](kotlin-splitties) | ![tests](https://github.com/jamesward/easyracer/actions/workflows/kotlin-splitties.yaml/badge.svg) |
-| Kotlin + Arrow | [kotlin-arrow](kotlin-arrow) | ![tests](https://github.com/jamesward/easyracer/actions/workflows/kotlin-arrow.yaml/badge.svg) |
-| Java + Loom | [java-loom](java-loom) | ![tests](https://github.com/jamesward/easyracer/actions/workflows/java-loom.yaml/badge.svg) |
-| Python + AIOHTTP | [python-aiohttp](python-aiohttp) | ![tests](https://github.com/jamesward/easyracer/actions/workflows/python-aiohttp.yaml/badge.svg) |
+| Name                           | Source                                               | Tests                                                                                                     | Author                                                                                  | Notes |
+|--------------------------------|------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------| ----- |
+| Scala 3 + ZIO                  | [scala-zio](scala-zio)                               | ![tests](https://github.com/jamesward/easyracer/actions/workflows/scala-zio.yaml/badge.svg)               | [James Ward](https://github.com/jamesward)                                              | |
+| Scala 3 + ox                   | [scala-ox](scala-ox)                                 | ![tests](https://github.com/jamesward/easyracer/actions/workflows/scala-ox.yaml/badge.svg)                | [Adam Warski](https://github.com/adamw)                                                 | |
+| Scala 2 + Cats Effects 3       | [scala-ce3](scala-ce3)                               | ![tests](https://github.com/jamesward/easyracer/actions/workflows/scala-ce3.yaml/badge.svg)               | [Paul Snively](https://github.com/paul-snively)                                                 | |
+| Kotlin + Coroutines            | [kotlin-coroutines](kotlin-coroutines)               | ![tests](https://github.com/jamesward/easyracer/actions/workflows/kotlin-coroutines.yaml/badge.svg)       | [Jack Leow](https://github.com/jackgene)                                                | |
+| Kotlin + Splitties             | [kotlin-splitties](kotlin-splitties)                 | ![tests](https://github.com/jamesward/easyracer/actions/workflows/kotlin-splitties.yaml/badge.svg)        | [James Ward](https://github.com/jamesward)                                              | |
+| Kotlin + Arrow                 | [kotlin-arrow](kotlin-arrow)                         | ![tests](https://github.com/jamesward/easyracer/actions/workflows/kotlin-arrow.yaml/badge.svg)            | [James Ward](https://github.com/jamesward)                                              | |
+| Java + Loom                    | [java-loom](java-loom)                               | ![tests](https://github.com/jamesward/easyracer/actions/workflows/java-loom.yaml/badge.svg)               | [James Ward](https://github.com/jamesward)                                              | |
+| Python + AIOHTTP + TaskGroup   | [python-aiohttp-taskgroup](python-aiohttp-taskgroup) | ![tests](https://github.com/jamesward/easyracer/actions/workflows/python-aiohttp-taskgroup.yaml/badge.svg) | [James Ward](https://github.com/jamesward) [Bruce Eckel](https://github.com/BruceEckel) | |
+| Python + AIOHTTP               | [python-aiohttp](python-aiohttp)                     | ![tests](https://github.com/jamesward/easyracer/actions/workflows/python-aiohttp.yaml/badge.svg)          | [James Ward](https://github.com/jamesward)                                              | Unable to get it working |
+| Python + HTTPX + asyncio       | [python-httpx-asyncio](python-httpx-asyncio)         | ![tests](https://github.com/jamesward/easyracer/actions/workflows/python-httpx-asyncio.yaml/badge.svg)    | [James Ward](https://github.com/jamesward)                                              | Unable to get it working |
+| Python + HTTPX + Trio          | [python-httpx-trio](python-httpx-trio)               | ![tests](https://github.com/jamesward/easyracer/actions/workflows/python-httpx-trio.yaml/badge.svg)       | [James Ward](https://github.com/jamesward)                                              | Unable to get it working |
+| Go                             | [go-stdlib](go-stdlib)                               | ![tests](https://github.com/jamesward/easyracer/actions/workflows/go-stdlib.yaml/badge.svg)               | [Jack Leow](https://github.com/jackgene)                                                | |
+| Swift + Grand Central Dispatch | [swift-dispatch](swift-dispatch)                     | ![tests](https://github.com/jamesward/easyracer/actions/workflows/swift-dispatch.yaml/badge.svg)          | [Jack Leow](https://github.com/jackgene)                                                | |
+| Swift + async/await            | [swift-async](swift-async)                           | ![tests](https://github.com/jamesward/easyracer/actions/workflows/swift-async.yaml/badge.svg)             | [Jack Leow](https://github.com/jackgene)                                                | |
+| Swift + Combine                | [swift-combine](swift-combine)                       | ![tests](https://github.com/jamesward/easyracer/actions/workflows/swift-combine.yaml/badge.svg)           | [Jack Leow](https://github.com/jackgene)                                                | |
+| Elm                            | [elm-worker](elm-worker)                             | ![tests](https://github.com/jamesward/easyracer/actions/workflows/elm-worker.yaml/badge.svg)              | [Jack Leow](https://github.com/jackgene)                                                | |
+| Rust + Tokio                   | [rust-tokio](rust-tokio)                             | ![tests](https://github.com/jamesward/easyracer/actions/workflows/rust-tokio.yaml/badge.svg)              | [James Ward](https://github.com/jamesward) and Rust Developer Retreat Participants      | |
+| JavaScript                     | [javascript-stdlib](javascript-stdlib)                      | ![tests](https://github.com/jamesward/easyracer/actions/workflows/javascript-stdlib.yaml/badge.svg)               | [James Ward](https://github.com/jamesward) | |

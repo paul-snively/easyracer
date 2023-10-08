@@ -1,0 +1,20 @@
+{
+  "name": "easyracer-javascript-stdlib",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon main.js",
+    "test": "node --experimental-vm-modules --max-old-space-size=2048 node_modules/jest/bin/jest.js"
+  },
+  "engines": {
+    "node": "20.5.1"
+  },
+  "devDependencies": {
+    "jest": "latest",
+    "nodemon": "latest",
+    "testcontainers": "latest"
+  },
+  "jest": {
+    "transform": {}
+  }
+}

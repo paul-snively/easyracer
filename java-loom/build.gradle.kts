@@ -4,7 +4,7 @@ plugins {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(19))
+        languageVersion.set(JavaLanguageVersion.of(21))
     }
 }
 
@@ -13,10 +13,10 @@ repositories {
 }
 
 dependencies {
-    testImplementation("org.junit.jupiter:junit-jupiter:5.9.0")
-    testImplementation("org.testcontainers:testcontainers:1.17.6")
-    testImplementation("org.testcontainers:junit-jupiter:1.17.6")
-    testRuntimeOnly("org.slf4j:slf4j-simple:2.0.5")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
+    testImplementation("org.testcontainers:testcontainers:1.19.0")
+    testImplementation("org.testcontainers:junit-jupiter:1.19.0")
+    testRuntimeOnly("org.slf4j:slf4j-simple:2.0.9")
 }
 
 application {
@@ -24,16 +24,16 @@ application {
 }
 
 tasks.withType<JavaCompile> {
-    options.compilerArgs.addAll(listOf("--enable-preview", "--add-modules", "jdk.incubator.concurrent"))
+    options.compilerArgs.addAll(listOf("--enable-preview"))
 }
 
 tasks.withType<JavaExec> {
-    jvmArgs("--enable-preview", "--add-modules", "jdk.incubator.concurrent")
+    jvmArgs("--enable-preview")
 }
 
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
-    jvmArgs("--enable-preview", "--add-modules", "jdk.incubator.concurrent")
+    jvmArgs("--enable-preview")
 
     testLogging {
         showStandardStreams = true
