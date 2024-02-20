@@ -1,9 +1,9 @@
 use rust_tokio::*;
 use testcontainers::*;
 use testcontainers::core::WaitFor;
-use testcontainers::images::generic::GenericImage;
+use testcontainers::GenericImage;
 
-#[tokio::test(flavor = "multi_thread", worker_threads = 1)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn all_scenarios() {
     let docker = clients::Cli::default();
 
@@ -24,6 +24,7 @@ async fn all_scenarios() {
         assert_eq!(scenario_7(port).await, "right");
         assert_eq!(scenario_8(port).await, "right");
         assert_eq!(scenario_9(port).await, "right");
+        assert_eq!(scenario_10(port).await, "right");
     }
 
 }

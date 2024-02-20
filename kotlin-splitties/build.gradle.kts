@@ -1,6 +1,6 @@
 plugins {
     application
-    kotlin("jvm") version "1.9.10"
+    kotlin("jvm") version "1.9.22"
 }
 
 java {
@@ -18,15 +18,15 @@ application {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-    implementation("io.ktor:ktor-client-core:2.3.4")
-    implementation("io.ktor:ktor-client-java:2.3.4")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+    implementation("io.ktor:ktor-client-core:2.3.8")
+    implementation("io.ktor:ktor-client-java:2.3.8")
     implementation("com.louiscad.splitties:splitties-coroutines:3.0.0")
+    runtimeOnly("org.slf4j:slf4j-simple:2.0.12")
 
-    testImplementation("io.kotest:kotest-runner-junit5:5.7.2")
-    testImplementation("io.kotest:kotest-assertions-core:5.7.2")
+    testImplementation("io.kotest:kotest-runner-junit5:5.8.0")
+    testImplementation("io.kotest:kotest-assertions-core:5.8.0")
     testImplementation("io.kotest.extensions:kotest-extensions-testcontainers:2.0.2")
-    testRuntimeOnly("org.slf4j:slf4j-simple:2.0.9")
 }
 
 tasks.withType<Test>().configureEach {
