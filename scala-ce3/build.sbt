@@ -1,5 +1,7 @@
 scalaVersion := "2.13.12"
 
+addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")
+
 libraryDependencies ++= List(
   "org.http4s"          %% "http4s-ember-client"      % "0.23.23",
   "com.disneystreaming" %% "weaver-cats"              % "0.8.1"    % Test,
