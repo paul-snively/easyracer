@@ -4,7 +4,7 @@ import cats._, cats.implicits._
 import cats.data.Chain
 
 import cats.effect._, cats.effect.implicits._
-import cats.effect.std.CountDownLatch
+import cats.effect.std.{ Console, CountDownLatch }
 
 import org.http4s._
 import org.http4s.Method._
@@ -15,6 +15,8 @@ import org.http4s.client.dsl.io._
 import org.http4s.ember.client.EmberClientBuilder
 
 import cats.effect.kernel.Outcome.Succeeded
+
+import fs2._
 
 object EasyRacerClient extends IOApp.Simple {
   val cr = EmberClientBuilder.default[IO]
@@ -198,12 +200,12 @@ object EasyRacerClient extends IOApp.Simple {
   def scenario9(client: Client[IO], scenarioUrl: Int => Uri) = {
     val req = for {
       body <- client.expect[String](scenarioUrl(9))
-      now <- Clock[IO].realTimeInstant
+      now <- IO.realTimeInstant
     } yield
       now -> body
 
-    List.fill(10)(req)
-      .parTraverseFilter(_.option)
+    Stream.emits(List.fill(10)(Stream.eval(req).mask))
+      .parJoin(10).compile.toList
       .map(_.sortBy(_._1).map(_._2).mkString)
   }
 
