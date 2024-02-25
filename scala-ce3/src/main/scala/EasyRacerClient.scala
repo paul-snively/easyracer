@@ -1,10 +1,13 @@
+import com.sun.management.OperatingSystemMXBean
+import java.lang.management.ManagementFactory
+
 import scala.concurrent.duration._
 
 import cats._, cats.implicits._
 import cats.data.Chain
 
 import cats.effect._, cats.effect.implicits._
-import cats.effect.std.{ Console, CountDownLatch }
+import cats.effect.std.{ Console, CountDownLatch, Random }
 
 import org.http4s._
 import org.http4s.Method._
@@ -137,7 +140,7 @@ object EasyRacerClient extends IOApp.Simple {
 
   def scenario5(client: Client[IO], scenarioUrl: Int => Uri) = {
     val url = scenarioUrl(5)
-    // This captures the "require success and get theh body as a String" constraint
+    // This captures the "require success and get the body as a String" constraint
     val req = client.expect[String](GET(url))
 
     req.raceSuccess(req)
@@ -209,6 +212,40 @@ object EasyRacerClient extends IOApp.Simple {
       .map(_.sortBy(_._1).map(_._2).mkString)
   }
 
+  def scenario10(client: Client[IO], scenarioUrl: Int => Uri) = {
+    val url = scenarioUrl(10)
+
+    val id  = "fungible"
+
+    val random = Random.scalaUtilRandom[IO]
+
+    val hashish = for {
+      rand  <- Stream.eval(random)
+      bytes <- Stream.eval(rand.nextBytes(512))
+      sha   <- (Stream.emits(bytes) through hash.sha512).chunks
+    } yield sha
+
+    val blocker: Stream[IO, Nothing] = Stream.eval(client.expect[String](url +? id)).concurrently(hashish).drain
+
+    def sendLoad: IO[String] = {
+      val osBean = ManagementFactory.getPlatformMXBean(classOf[OperatingSystemMXBean])
+
+      for {
+        load   <- IO { osBean.getProcessCpuLoad * osBean.getAvailableProcessors }    
+        _      <- Console[IO].errorln(s"""*** LOAD = $load ***""")
+        result <- client.get[String](url +? (id -> load)) { resp =>
+          if (resp.status == Status.Ok) Console[IO].errorln(s"""*** STATUS OK ***""") *> resp.as[String]
+          else if (resp.status == Status.Found) Console[IO].errorln(s"""*** STATUS FOUND ***""") *> IO.sleep(1.second) *> sendLoad
+          else Console[IO].errorln(s"""*** ERROR STATUS ***"""") *> resp.as[String]
+        }
+      } yield result
+    }
+
+    val reporter = Stream.eval(sendLoad)
+
+    Stream(blocker, reporter).parJoin(2).compile.lastOrError
+  }
+
   def all(client: Client[IO], scenarioUrl: Int => Uri) =
     List(
       scenario1 _,
@@ -220,6 +257,7 @@ object EasyRacerClient extends IOApp.Simple {
       scenario7 _,
       scenario8 _,
       scenario9 _,
+      scenario10 _
     ).parTraverse { f =>
       f(client, scenarioUrl)
     }

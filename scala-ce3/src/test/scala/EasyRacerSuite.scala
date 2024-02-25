@@ -7,14 +7,23 @@ import cats.effect._
 import org.http4s.Uri
 import org.http4s.client.Client
 
+import org.slf4j.LoggerFactory
+
+import org.testcontainers.containers.output.Slf4jLogConsumer
+
 import EasyRacerClient._
 
 object EasyRacerSuite extends IOSuite {
+  val LOGGER      = LoggerFactory.getLogger(this.getClass())
+  val logConsumer = new Slf4jLogConsumer(LOGGER)
+  
   override type Res = (EasyRacerContainer, Client[IO])
 
   def sharedResource: Resource[IO,Res] = {
     (
-      ContainerResource(IO(EasyRacerContainer())),
+      ContainerResource(IO(EasyRacerContainer())).map { c =>
+        c.configure(_.followOutput(logConsumer))
+      },
       cr
     ).parTupled
   }
@@ -56,5 +65,9 @@ object EasyRacerSuite extends IOSuite {
 
   test("scenario9") { case (racer, client) =>
     scenario9(client, scenarioUrl(racer)).map(s => expect(s === "right"))
+  }
+
+  test("scenario10") { case (racer, client) =>
+    scenario10(client, scenarioUrl(racer)).map(s => expect(s === "right"))
   }
 }
