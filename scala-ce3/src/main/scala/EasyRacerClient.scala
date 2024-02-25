@@ -201,14 +201,16 @@ object EasyRacerClient extends IOApp.Simple {
 */
 
   def scenario9(client: Client[IO], scenarioUrl: Int => Uri) = {
+    val NUM_ENTRIES = 10
+
     val req = for {
       body <- client.expect[String](scenarioUrl(9))
       now <- IO.realTimeInstant
     } yield
       now -> body
 
-    Stream.emits(List.fill(10)(Stream.eval(req).mask))
-      .parJoin(10).compile.toList
+    Stream.emits(List.fill(NUM_ENTRIES)(Stream.eval(req).mask))
+      .parJoin(NUM_ENTRIES).compile.toList
       .map(_.sortBy(_._1).map(_._2).mkString)
   }
 
@@ -218,11 +220,10 @@ object EasyRacerClient extends IOApp.Simple {
     val id  = "fungible"
 
     val random = Random.scalaUtilRandom[IO]
-
     val hashish = for {
       rand  <- Stream.eval(random)
-      bytes <- Stream.eval(rand.nextBytes(512))
-      sha   <- (Stream.emits(bytes) through hash.sha512).chunks
+      bytes  = Stream.eval(rand.nextBytes(512)).flatMap(arr => Stream.emits(arr)).repeat
+      sha   <- bytes through hash.sha512
     } yield sha
 
     val blocker: Stream[IO, Nothing] = Stream.eval(client.expect[String](url +? id)).concurrently(hashish).drain
@@ -231,12 +232,11 @@ object EasyRacerClient extends IOApp.Simple {
       val osBean = ManagementFactory.getPlatformMXBean(classOf[OperatingSystemMXBean])
 
       for {
-        load   <- IO { osBean.getProcessCpuLoad * osBean.getAvailableProcessors }    
-        _      <- Console[IO].errorln(s"""*** LOAD = $load ***""")
+        load   <- IO(osBean.getProcessCpuLoad * osBean.getAvailableProcessors)
         result <- client.get[String](url +? (id -> load)) { resp =>
-          if (resp.status == Status.Ok) Console[IO].errorln(s"""*** STATUS OK ***""") *> resp.as[String]
-          else if (resp.status == Status.Found) Console[IO].errorln(s"""*** STATUS FOUND ***""") *> IO.sleep(1.second) *> sendLoad
-          else Console[IO].errorln(s"""*** ERROR STATUS ***"""") *> resp.as[String]
+          if (resp.status == Status.Found) resp.as[String].flatMap(s => Console[IO].errorln(s)) *> IO.sleep(1.second) *> sendLoad
+          else if (resp.status == Status.Ok) resp.as[String]
+          else resp.as[String].flatMap(s => IO.raiseError[String](new RuntimeException(s)))
         }
       } yield result
     }
